@@ -1626,7 +1626,7 @@
 
     <div class="modal-actions">
       <button class="modal-btn cancel" onclick="backToDateModal()">No</button>
-      <button class="modal-btn confirm" id="confirmReservationBtn">Confirm</button>
+      <button class="modal-btn confirm" id="confirmReservationBtn" onclick="onConfirmReservationClick()">Confirm</button>
     </div>
   </div>
 </div>
@@ -2246,6 +2246,23 @@ function navigateToPage(page) {
             alert(`${feature} feature is coming soon!`);
         }
 
+        function hideHeaderStatMeta() {
+            document
+              .querySelectorAll('#headerStats .stat-icon, #headerStats .stat-label')
+              .forEach(el => {
+                el.style.display = 'none';
+              });
+          }
+
+        function showHeaderStatMeta() {
+            document
+              .querySelectorAll('#headerStats .stat-icon, #headerStats .stat-label')
+              .forEach(el => {
+                el.style.display = '';
+              });
+          }
+
+
         // ===== HEADER STATS FUNCTIONS =====
         function updateHeaderStats(pageType) {
             const headerStats = document.getElementById('headerStats');
@@ -2299,53 +2316,66 @@ function navigateToPage(page) {
                         </div>
                     </div>
                 `;
+                // Hide icons and labels initially
+                headerStats
+                  .querySelectorAll('.stat-icon, .stat-label')
+                  .forEach(el => {
+                    el.style.display = 'none';
+                  });
+
                 
                 // Load lead stats
                 loadLeadStats();
             } else if (pageType === 'followups') {
                 headerStats.innerHTML = `
+                   <!-- Total Follow-ups -->
                     <div class="stat-card total-followups">
-                        <div class="stat-icon">
-                            <i class="fas fa-phone-alt"></i>
+                      <div class="stat-icon" id="totalFollowupsIcon"></div>
+                      <div class="stat-content">
+                        <div class="stat-value" id="totalFollowupsCount">
+                          <i class="fas fa-spinner fa-spin"></i>
                         </div>
-                        <div class="stat-content">
-                            <div class="stat-value" id="totalFollowupsCount"><i class="fas fa-spinner fa-spin"></i></div>
-                            <div class="stat-label">Total Follow-ups</div>
-                        </div>
+                        <div class="stat-label" id="totalFollowupsLabel"></div>
+                      </div>
                     </div>
+
+                    <!-- Pending Follow-ups -->
                     <div class="stat-card pending-followups">
-                        <div class="stat-icon">
-                            <i class="fas fa-clock"></i>
+                      <div class="stat-icon" id="pendingFollowupsIcon"></div>
+                      <div class="stat-content">
+                        <div class="stat-value" id="pendingFollowupsCount">
+                          <i class="fas fa-spinner fa-spin"></i>
                         </div>
-                        <div class="stat-content">
-                            <div class="stat-value" id="pendingFollowupsCount"><i class="fas fa-spinner fa-spin"></i></div>
-                            <div class="stat-label">Pending</div>
-                        </div>
+                        <div class="stat-label" id="pendingFollowupsLabel"></div>
+                      </div>
                     </div>
+
+                    <!-- Completed Follow-ups -->
                     <div class="stat-card completed-followups">
-                        <div class="stat-icon">
-                            <i class="fas fa-check-circle"></i>
+                      <div class="stat-icon" id="completedFollowupsIcon"></div>
+                      <div class="stat-content">
+                        <div class="stat-value" id="completedFollowupsCount">
+                          <i class="fas fa-spinner fa-spin"></i>
                         </div>
-                        <div class="stat-content">
-                            <div class="stat-value" id="completedFollowupsCount"><i class="fas fa-spinner fa-spin"></i></div>
-                            <div class="stat-label">Completed</div>
-                        </div>
+                        <div class="stat-label" id="completedFollowupsLabel"></div>
+                      </div>
                     </div>
                 `;
-                
+            
+                                
                 // Load follow-up stats
                 loadFollowupStatsForHeader();
             } else if (pageType === 'overdues') {
                 headerStats.innerHTML = `
-                    <div class="stat-card overdue-followups">
-                        <div class="stat-icon">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-value" id="overdueFollowupsCount"><i class="fas fa-spinner fa-spin"></i></div>
-                            <div class="stat-label">Overdue Follow-ups</div>
-                        </div>
+                 <div class="stat-card overdue-followups">
+                  <div class="stat-icon" id="overdueIcon"></div>
+                  <div class="stat-content">
+                    <div class="stat-value" id="overdueFollowupsCount">
+                      <i class="fas fa-spinner fa-spin"></i>
                     </div>
+                    <div class="stat-label" id="overdueLabel"></div>
+                  </div>
+                </div>
                 `;
             } else{
                 headerStats.innerHTML = ``
@@ -2383,6 +2413,10 @@ function handleLeadStatsLoaded(result) {
         // document.getElementById('dashboardNewLeads').textContent = stats.newLeads;
         // document.getElementById('dashboardInterviewsToday').textContent = stats.interviewsToday;
         // document.getElementById('dashboardDetailsShared').textContent = stats.detailsShared || 0;
+
+        //  SHOW LABELS ,icons AFTER DATA IS SET
+        showHeaderStatMeta();
+
         
         console.log("Stats loaded:", stats);
         loadUserLeads()
@@ -2401,13 +2435,46 @@ function handleLeadStatsLoaded(result) {
         }
         
         function handleFollowupStatsLoaded(result) {
-            if (result.success) {
+           if (!result.success) return;
                 const stats = result.stats;
-                document.getElementById('totalFollowupsCount').textContent = stats.totalFollowups;
-                document.getElementById('pendingFollowupsCount').textContent = stats.pendingFollowups;
-                document.getElementById('completedFollowupsCount').textContent = stats.completedFollowups;
-                document.getElementById('overdueFollowupsCount').textContent = stats.overdueFollowups || 0;
-            }
+                // -------- COUNTS (safe for both pages) --------
+                const totalEl = document.getElementById('totalFollowupsCount');
+                if (totalEl) totalEl.textContent = stats.totalFollowups;
+                const pendingEl = document.getElementById('pendingFollowupsCount');
+                if (pendingEl) pendingEl.textContent = stats.pendingFollowups;
+                const completedEl = document.getElementById('completedFollowupsCount');
+                if (completedEl) completedEl.textContent = stats.completedFollowups;
+                const overdueCountEl = document.getElementById('overdueFollowupsCount');
+                if (overdueCountEl) overdueCountEl.textContent = stats.overdueFollowups || 0;
+                // -------- FOLLOWUPS ICONS --------
+                const totalIcon = document.getElementById('totalFollowupsIcon');
+                if (totalIcon) {
+                  totalIcon.innerHTML = '<i class="fas fa-phone-alt"></i>';
+                }
+                const pendingIcon = document.getElementById('pendingFollowupsIcon');
+                if (pendingIcon) {
+                  pendingIcon.innerHTML = '<i class="fas fa-clock"></i>';
+                }
+                const completedIcon = document.getElementById('completedFollowupsIcon');
+                if (completedIcon) {
+                  completedIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+                }
+                // -------- FOLLOWUPS LABELS --------
+                const totalLabel = document.getElementById('totalFollowupsLabel');
+                if (totalLabel) totalLabel.textContent = 'Total Follow-ups';
+                const pendingLabel = document.getElementById('pendingFollowupsLabel');
+                if (pendingLabel) pendingLabel.textContent = 'Pending';
+                const completedLabel = document.getElementById('completedFollowupsLabel');
+                if (completedLabel) completedLabel.textContent = 'Completed';
+                // -------- OVERDUES ICON + LABEL --------
+                const overdueIcon = document.getElementById('overdueIcon');
+                if (overdueIcon) {
+                  overdueIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                }
+                const overdueLabel = document.getElementById('overdueLabel');
+                if (overdueLabel) {
+                  overdueLabel.textContent = 'Overdue Follow-ups';
+                }
         }
         
 function loadDashboardStats() {
@@ -5815,9 +5882,13 @@ saveBtn.style.cursor = "not-allowed";
 
 
 
-
+window.activeProfileId = null;
 
 function getleadslevel(profileId, employeeName) {
+ 
+   // THIS LINE IS CRITICAL
+  window.activeProfileId = profileId;
+   console.log("ACTIVE PROFILE:", window.activeProfileId);
 
 //   const confirmBtn = document.getElementById("getleadslevel-btn");
 // confirmBtn.innerHTML = "Loading...";
@@ -5840,7 +5911,8 @@ function getleadslevel(profileId, employeeName) {
         // document.getElementById('reservationPopupModal').classList.remove('active');
         // document.getElementById("get-lead-level-btn").innerHTML="Proceed"
         // document.getElementById("get-lead-level-btn").disabled = false;
-        showInterviewSlotModal(response.level,profileId)
+        //  DO NOT pass profileId here anymore
+        showInterviewSlotModal(response.level)
       } else {
         showErrorModal("Error:", response.error);
       }
@@ -5860,7 +5932,7 @@ function hideReservationPopupModal(){
 }
 
 
-function showInterviewSlotModal(level, profileId) {
+function showInterviewSlotModal(level) {
     const modal = document.getElementById("InterviewSlotModal");
     modal.classList.add("active");
 
@@ -5868,7 +5940,7 @@ function showInterviewSlotModal(level, profileId) {
 
     // Fix: Pass a function reference, not the result of the function
     google.script.run
-        .withSuccessHandler((response) => renderDateButtons(response, profileId, level))
+        .withSuccessHandler((response) => renderDateButtons(response, level))
         .getInterviewSlots(level);
 }
 
@@ -5884,7 +5956,8 @@ function getDayFromDate(dateStr) {
 
 
 
-function renderDateButtons(response, profileId, level) {
+function renderDateButtons(response, level) {
+  console.log("ACTIVE PROFILE:", window.activeProfileId);
     const container = document.getElementById("reservationModalContent");
     container.innerHTML = "";
 
@@ -5904,7 +5977,7 @@ function renderDateButtons(response, profileId, level) {
   btn.textContent = `${dateObj.date}\n${day}`;
 } else {
   btn.textContent = `${dateObj.date}\n${day}`;
-  btn.onclick = () => openTimeSlotModal(dateObj, profileId, level);
+  btn.onclick = () => openTimeSlotModal(dateObj, window.activeProfileId , level);
 }
 
 
@@ -5912,7 +5985,14 @@ function renderDateButtons(response, profileId, level) {
     });
 }
 
+// Holds the currently selected reservation (SAFE single source of truth)
+window.currentReservationContext = null;
+
 function openTimeSlotModal(dateObj, profileId, level) {
+
+   //  CRITICAL: clear previous selection
+    window.currentReservationContext = null;
+
     document.getElementById("InterviewSlotModal").classList.remove("active");
     document.getElementById("TimeSlotModal").classList.add("active");
 
@@ -5951,16 +6031,39 @@ function openTimeSlotModal(dateObj, profileId, level) {
 
 
 
+
 function confirmReservationDetails(date, time, profileId, level) {
-  // profile expected: { id, name }
+   console.log("ACTIVE PROFILE:", window.activeProfileId);
+    console.log("CONFIRM MODAL CALLED", date, time, profileId, level);
+     window.currentReservationContext = {
+    date,
+    time,
+    profileId,
+    level
+  };
+
   document.getElementById("TimeSlotModal").classList.remove("active");
-  document.getElementById("reservationConfirmModal").classList.add("active");
-  
-  const lead = allLeads.find(l => l.profileId === profileId);
 
   const modal = document.getElementById("reservationConfirmModal");
   const content = document.getElementById("reservationConfirmModalContent");
   const confirmBtn = document.getElementById("confirmReservationBtn");
+
+  //  reset UI
+  content.innerHTML = "";
+  confirmBtn.innerHTML = "Confirm";
+  confirmBtn.disabled = false;
+
+  //  store current selection (THIS IS THE FIX)
+  window.currentReservationContext = { date, time, profileId, level };
+
+  const lead = allLeads.find(
+    l => String(l.profileId) === String(profileId)
+  );
+
+  if (!lead) {
+    content.innerHTML = "Lead not found";
+    return;
+  }
 
   content.innerHTML = `
     Are you sure you want to reserve 
@@ -5970,29 +6073,44 @@ function confirmReservationDetails(date, time, profileId, level) {
     (Level: <strong>${level}</strong>)?
   `;
 
-  confirmBtn.onclick = function () {
-    
-    saveReservationDetails(date,time, profileId, level);
-    
-  const confirmBtn = document.getElementById("confirmReservationBtn");
-confirmBtn.innerHTML = "Loading...";
-confirmBtn.disabled = true;
-
-  };
-
+  modal.classList.add("active");
   modal.style.display = "flex";
 }
 
+
 function hideReservationConfirmModal() {
+  window.currentReservationContext = null;
+
+  const modal = document.getElementById("reservationConfirmModal");
   const confirmBtn = document.getElementById("confirmReservationBtn");
-  confirmBtn.innerHTML="Confirm"
+
+  confirmBtn.innerHTML = "Confirm";
   confirmBtn.disabled = false;
   confirmBtn.style.backgroundColor = "";
-confirmBtn.style.color = "";
-  // document.getElementById("reservationConfirmModal").style.display = "none";
-  
-  document.getElementById("reservationConfirmModal").classList.remove("active");
+  confirmBtn.style.color = "";
+
+  modal.style.display = "none";     // ADD THIS LINE
+  modal.classList.remove("active");
 }
+
+function onConfirmReservationClick() {
+  if (!currentReservationContext) {
+    console.warn("No reservation context found");
+    return;
+  }
+
+  const btn = document.getElementById("confirmReservationBtn");
+  btn.innerHTML = "Loading...";
+  btn.disabled = true;
+
+  const { date, time, profileId, level } = currentReservationContext;
+
+  console.log("Saving reservation:", date, time, profileId, level);
+
+  saveReservationDetails(date, time, profileId, level);
+}
+
+
 
 
 
@@ -6003,7 +6121,7 @@ function saveReservationDetails(date, time, profileId, level) {
   confirmBtn.style.backgroundColor = "green";
 confirmBtn.style.color = "white";
   
-  document.getElementById("TimeSlotModal").classList.remove("active");
+  //document.getElementById("TimeSlotModal").classList.remove("active");
   
 
   // Find lead from allLeads

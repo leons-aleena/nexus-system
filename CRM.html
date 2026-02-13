@@ -898,34 +898,21 @@ html, body {
             inputField.style.borderColor = '#27ae60';
             inputField.style.background = 'linear-gradient(135deg, #f0fff4 0%, #e6ffe6 100%)';
             
-            // Transition to dashboard loading screen - FIXED APPROACH
-            setTimeout(() => {
-                console.log('Calling showDashboardLoading...');
-                google.script.run
-                    .withSuccessHandler(function(htmlContent) {
-                        console.log('showDashboardLoading success - HTML content received');
-                        console.log('HTML content length:', htmlContent.length);
-                        
-                        // Create a new document and replace completely
-                        const newDocument = document.open('text/html', 'replace');
-                        newDocument.write(htmlContent);
-                        newDocument.close();
-                    })
-                    .withFailureHandler(function(error) {
-                        console.error('showDashboardLoading error:', error);
-                        // Simple fallback that should always work
-                        document.body.innerHTML = `
-                            <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #FFFBEB; flex-direction: column; padding: 20px;">
-                                <h1 style="color: #FFD700; margin-bottom: 20px;">🚀 Welcome to Nexus CRM!</h1>
-                                <h2 style="color: #2c3e50;">${response.employeeName}</h2>
-                                <p style="color: #7f8c8d; margin: 10px 0;">Employee ID: ${response.employeeId}</p>
-                                <p style="color: #e74c3c; margin-top: 20px;">Redirecting to dashboard...</p>
-                                <button onclick="location.reload()" style="margin-top: 20px; padding: 12px 24px; background: #FFD700; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Continue to Dashboard</button>
-                            </div>
-                        `;
-                    })
-                    .showDashboardLoading(response.employeeName, response.employeeId);
-            }, 800);
+            google.script.run
+                .withSuccessHandler(function(htmlContent) {
+
+                    // Replace login page with dashboard directly
+                    document.open();
+                    document.write(htmlContent);
+                    document.close();
+
+                })
+                .withFailureHandler(function(error) {
+                    showError("Failed to load dashboard.");
+                    resetButton(loginButton);
+                })
+                .showMainDashboard(response.employeeName, response.employeeId);
+
         } else {
             showError(response.error);
             resetButton(loginButton);
